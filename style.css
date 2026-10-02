@@ -206,6 +206,7 @@ h1 em{
 }
 
 
+
 .zip-download {
   display: inline-block;
   margin-top: 12px;
@@ -879,4 +880,13 @@ kbd{
     animation:none !important;
     transition:none !important;
   }
+}
+
+#zipFilePassword {
+  border-radius: 0;
+  transition: border-color 0.15s ease;
+}
+#zipFilePassword:focus {
+  border-color: var(--vermilion);
+  background: #fff;
 }

@@ -11,7 +11,7 @@
    - Image previews
    - Remove individual images
    - Clear all
-   - ZIP generation with JSZip
+   - ZIP generation with password via zip.js
    - Progress reporting
 
    IMPORTANT:
@@ -456,6 +456,14 @@
     return card;
   }
 
+  function removeItem(id) {
+    const index = items.findIndex(item => item.id === id);
+    if (index !== -1) {
+      URL.revokeObjectURL(items[index].previewUrl);
+      items.splice(index, 1);
+      render();
+    }
+  }
 
   function render() {
     const cards =
@@ -482,882 +490,131 @@
   }
 
 
-  /* =========================
-     ADD BLOB
-  ========================= */
-
-  function addBlob(
-    blob,
-    filename,
-    source = "local"
-  ) {
-    if (!(blob instanceof Blob)) {
-      setStatus(
-        "That item could not be read as an image."
-      );
-
-      return false;
-    }
-
-
-    if (
-      !blob.type ||
-      !blob.type.startsWith("image/")
-    ) {
-      setStatus(
-        "Only image files are supported."
-      );
-
-      return false;
-    }
-
-
-    const finalName =
-      ensureImageExtension(
-        filename || "image",
-        blob
-      );
-
-
-    const previewUrl =
-      URL.createObjectURL(blob);
-
-
-    const item = {
-      id:
-        `${Date.now()}-${Math.random()
-          .toString(36)
-          .slice(2)}`,
-
-      blob,
-
-      name:
-        finalName,
-
-      previewUrl,
-
-      source
-    };
-
-
-    items.push(item);
-
-    render();
-
-    setStatus(
-      `${items.length} image${
-        items.length === 1
-          ? ""
-          : "s"
-      } on the table.`
-    );
-
-    return true;
-  }
-
-
-  /* =========================
-     REMOVE
-  ========================= */
-
-  function removeItem(id) {
-    const index =
-      items.findIndex(
-        item =>
-          item.id === id
-      );
-
-    if (index === -1) {
-      return;
-    }
-
-
-    const [item] =
-      items.splice(index, 1);
-
-
-    if (item.previewUrl) {
-      URL.revokeObjectURL(
-        item.previewUrl
-      );
-    }
-
-
-    render();
-
-
-    setStatus(
-      items.length
-        ? `${items.length} image${
-            items.length === 1
-              ? ""
-              : "s"
-          } remaining.`
-        : "The table is empty."
-    );
-  }
-
-
-  /* =========================
-     CLEAR
-  ========================= */
-
-  function clearAll() {
-    if (isPacking) {
-      return;
-    }
-
-
-    for (const item of items) {
-      if (item.previewUrl) {
-        URL.revokeObjectURL(
-          item.previewUrl
-        );
-      }
-    }
-
-
-    items.length = 0;
-
-    render();
-
-    setStatus(
-      "The table has been swept clear."
-    );
-  }
-
-
-  /* =========================
-     LOCAL FILES
-  ========================= */
-
-  function addFiles(fileList) {
-    if (!fileList) {
-      return;
-    }
-
-
-    const files =
-      Array.from(fileList);
-
-
-    const images =
-      files.filter(
-        file =>
-          file &&
-          (
-            file.type.startsWith(
-              "image/"
-            ) ||
-            /\.(jpg|jpeg|png|gif|webp|bmp|svg|avif|tif|tiff|ico)$/i
-              .test(file.name)
-          )
-      );
-
-
-    if (images.length === 0) {
-      setStatus(
-        "No image files were found."
-      );
-
-      return;
-    }
-
-
-    let added = 0;
-
-
-    for (const file of images) {
-      if (
-        addBlob(
-          file,
-          file.name,
-          "local"
-        )
-      ) {
-        added++;
-      }
-    }
-
-
-    if (added > 0) {
-      setStatus(
-        `Added ${added} image${
-          added === 1
-            ? ""
-            : "s"
-        } to the table.`
-      );
-    }
-  }
-
-
-  /* =========================
-     FILE PICKER
-  ========================= */
-
-  dropzone.addEventListener(
-    "click",
-    event => {
-      if (
-        event.target ===
-        fileInput
-      ) {
-        return;
-      }
-
-      if (!isPacking) {
-        fileInput.click();
-      }
-    }
-  );
-
-
-  dropzone.addEventListener(
-    "keydown",
-    event => {
-      if (isPacking) {
-        return;
-      }
-
-      if (
-        event.key === "Enter" ||
-        event.key === " "
-      ) {
-        event.preventDefault();
-
-        fileInput.click();
-      }
-    }
-  );
-
-
-  fileInput.addEventListener(
-    "change",
-    () => {
-      addFiles(
-        fileInput.files
-      );
-
-      fileInput.value = "";
-    }
-  );
-
-
-  /* =========================
-     DRAG & DROP
-  ========================= */
-
-  [
-    "dragenter",
-    "dragover"
-  ].forEach(
-    eventName => {
-      dropzone.addEventListener(
-        eventName,
-        event => {
-          event.preventDefault();
-
-          if (!isPacking) {
-            dropzone.classList.add(
-              "dragging"
-            );
-          }
-        }
-      );
-    }
-  );
-
-
-  [
-    "dragleave",
-    "drop"
-  ].forEach(
-    eventName => {
-      dropzone.addEventListener(
-        eventName,
-        event => {
-          event.preventDefault();
-
-          dropzone.classList.remove(
-            "dragging"
-          );
-        }
-      );
-    }
-  );
-
-
-  dropzone.addEventListener(
-    "drop",
-    event => {
-      if (isPacking) {
-        return;
-      }
-
-      addFiles(
-        event.dataTransfer.files
-      );
-    }
-  );
-
-
-  /* =========================
-     CLIPBOARD
-  ========================= */
-
-  document.addEventListener(
-    "paste",
-    event => {
-      if (isPacking) {
-        return;
-      }
-
-
-      const clipboardItems =
-        Array.from(
-          event.clipboardData?.items ||
-          []
-        );
-
-
-      const imageItems =
-        clipboardItems.filter(
-          item =>
-            item.type.startsWith(
-              "image/"
-            )
-        );
-
-
-      if (
-        imageItems.length === 0
-      ) {
-        return;
-      }
-
-
-      event.preventDefault();
-
-
-      let added = 0;
-
-
-      for (
-        const item of imageItems
-      ) {
-        const blob =
-          item.getAsFile();
-
-
-        if (!blob) {
-          continue;
-        }
-
-
-        const extension =
-          extensionFromMime(
-            blob.type
-          ) || ".png";
-
-
-        const filename =
-          `pasted-image-${Date.now()}${extension}`;
-
-
-        if (
-          addBlob(
-            blob,
-            filename,
-            "clipboard"
-          )
-        ) {
-          added++;
-        }
-      }
-
-
-      if (added > 0) {
-        setStatus(
-          `Pasted ${added} image${
-            added === 1
-              ? ""
-              : "s"
-          } from the clipboard.`
-        );
-      }
-    }
-  );
-
-
-  /* ========================================================
-     DATA URL
-     ======================================================== */
-
-  function isDataUrl(value) {
-    return String(value)
-      .trim()
-      .toLowerCase()
-      .startsWith("data:image/");
-  }
-
-
-  async function fetchDataUrl(dataUrl) {
-    const response =
-      await fetch(dataUrl);
-
-    if (!response.ok) {
-      throw new Error(
-        "Could not read data URL."
-      );
-    }
-
-    return response.blob();
-  }
-
-
-    /* =========================
-    URL FETCHING
-  ========================= */
-
-  async function fetchImageUrl(rawUrl) {
-    const value = String(rawUrl || "").trim();
-
-    if (!value) {
-      setStatus("Enter an image URL first.");
-      return;
-    }
-
-    let parsed;
-
-    try {
-      parsed = new URL(value);
-    } catch {
-      setStatus("That doesn't look like a valid image URL.");
-      return;
-    }
-
-    if (
-      parsed.protocol !== "http:" &&
-      parsed.protocol !== "https:"
-    ) {
-      setStatus(
-        "Please enter a normal HTTP or HTTPS image URL."
-      );
-      return;
-    }
-
-    if (isPacking) {
-      return;
-    }
-
-    addUrl.disabled = true;
-
-    const originalText = addUrl.textContent;
-    addUrl.textContent = "Fetching…";
-
-    setStatus("Fetching image…");
-
-    try {
-      const proxyUrl =
-        `/.netlify/functions/fetch-image?url=${encodeURIComponent(value)}`;
-
-      const response = await fetch(proxyUrl, {
-        method: "GET",
-        cache: "no-store"
-      });
-
-      if (!response.ok) {
-        let message =
-          `Image fetch failed (HTTP ${response.status}).`;
-
-        try {
-          const data = await response.json();
-
-          if (data?.error) {
-            message = data.error;
-          }
-        } catch {
-          // Response was not JSON.
-        }
-
-        throw new Error(message);
-      }
-
-      const blob = await response.blob();
-
-      if (!blob.type.startsWith("image/")) {
-        throw new Error(
-          "The URL did not return an image."
-        );
-      }
-
-      let filename = filenameFromUrl(value);
-
-      filename = ensureImageExtension(
-        filename,
-        blob
-      );
-
-      const added = addBlob(
-        blob,
-        filename,
-        "url"
-      );
-
-      if (added) {
-        urlInput.value = "";
-
-        setStatus(
-          `Fetched ${filename}. The image is now in browser memory and will be included in the ZIP.`
-        );
-      }
-
-    } catch (error) {
-      console.error(
-        "PixelPack URL import error:",
-        error
-      );
-
-      setStatus(
-        error?.message ||
-        "Could not fetch that image."
-      );
-
-    } finally {
-      addUrl.disabled = false;
-      addUrl.textContent = originalText;
-    }
-  }
-
-
-  addUrl.addEventListener(
-    "click",
-    () => {
-      fetchImageUrl(
-        urlInput.value
-      );
-    }
-  );
-
-
-  urlInput.addEventListener(
-    "keydown",
-    event => {
-      if (
-        event.key === "Enter"
-      ) {
-        event.preventDefault();
-
-        fetchImageUrl(
-          urlInput.value
-        );
-      }
-    }
-  );
-
-
-  /* =========================
-     CLEAR
-  ========================= */
-
-  clearBtn.addEventListener(
-    "click",
-    clearAll
-  );
-
-
-  /* ========================================================
-     ZIP
-     ======================================================== */
-
-  async function createZip() {
-    if (isPacking) {
-      return;
-    }
-
-
-    if (items.length === 0) {
-      setStatus(
-        "Add at least one image before sealing the parcel."
-      );
-
-      return;
-    }
-
-
-    if (
-      typeof window.JSZip ===
-      "undefined"
-    ) {
-      setStatus(
-        "JSZip could not be loaded. Make sure jszip.min.js is in the project folder."
-      );
-
-      return;
-    }
-
+  /* =========================================================
+     COMPRESSION & ENCRYPTION PIPELINE (zip.js)
+  ========================================================= */
+  zipBtn.addEventListener("click", async () => {
+    if (items.length === 0 || isPacking) return;
 
     isPacking = true;
-
     updateStats();
-
     showProgress(true);
-
     setProgress(0);
+    setStatus("Preparing container...");
 
+    const archivePassword = document.getElementById("zipFilePassword").value.trim();
+    const options = {};
 
-    zipBtn.disabled = true;
-
-    clearBtn.disabled = true;
-
-    addUrl.disabled = true;
-
-    fileInput.disabled = true;
-
-
-    setStatus(
-      `Packing ${items.length} image${
-        items.length === 1
-          ? ""
-          : "s"
-      }…`
-    );
-
+    if (archivePassword) {
+      options.password = archivePassword;
+      options.zipCrypto = true; // Triggers standard ZipCrypto for native OS extraction support
+      setStatus("Applying security keys...");
+    }
 
     try {
-      const zip =
-        new JSZip();
+      const blobWriter = new zip.BlobWriter("application/zip");
+      const zipWriter = new zip.ZipWriter(blobWriter, options);
 
+      const usedNames = new Set();
+      let completed = 0;
 
-      const usedNames =
-        new Set();
+      for (const item of items) {
+        const uniqueName = uniqueFilename(item.name, usedNames);
+        setStatus(`Packing: ${uniqueName}...`);
 
+        const fileReader = new zip.BlobReader(item.blob);
+        await zipWriter.add(uniqueName, fileReader);
 
-      const files =
-        items.map(item => {
-          const filename =
-            uniqueFilename(
-              item.name,
-              usedNames
-            );
-
-          return {
-            item,
-            filename
-          };
-        });
-
-
-      /* --------------------------------
-         ADD FILES
-         -------------------------------- */
-
-      for (
-        let i = 0;
-        i < files.length;
-        i++
-      ) {
-        const {
-          item,
-          filename
-        } = files[i];
-
-
-        zip.file(
-          filename,
-          item.blob
-        );
-
-
-        setProgress(
-          (i /
-            files.length) *
-            35
-        );
+        completed++;
+        setProgress((completed / items.length) * 100);
       }
 
+      setStatus("Sealing parcel...");
+      const finalZipBlob = await zipWriter.close();
 
-      /* --------------------------------
-         CREATE ZIP
-         -------------------------------- */
-
-      const zipBlob =
-        await zip.generateAsync(
-          {
-            type: "blob",
-
-            compression:
-              "DEFLATE",
-
-            compressionOptions: {
-              level: 6
-            }
-          },
-
-          metadata => {
-            const percent =
-              35 +
-              (
-                metadata.percent *
-                0.65
-              );
-
-            setProgress(
-              percent
-            );
-
-
-            setStatus(
-              `Packing… ${Math.round(
-                metadata.percent
-              )}%`
-            );
-          }
-        );
-
-
-      /* --------------------------------
-        DOWNLOAD ZIP
-        -------------------------------- */
-
-      const downloadUrl =
-        URL.createObjectURL(zipBlob);
-
-      const filename =
-        createZipFilename();
-
-      const link =
-        document.createElement("a");
-
-      link.href = downloadUrl;
-      link.download = filename;
-      link.textContent = `Download ${filename}`;
-
-      link.className = "zip-download";
-
-      document.body.appendChild(link);
-
+      const downloadUrl = URL.createObjectURL(finalZipBlob);
+      const tempLink = document.createElement("a");
+      tempLink.href = downloadUrl;
+      tempLink.download = `pixelpack-${Date.now()}.zip`;
+      document.body.appendChild(tempLink);
+      tempLink.click();
+      document.body.removeChild(tempLink);
+      URL.revokeObjectURL(downloadUrl);
+      setStatus("Parcel delivered successfully!");
       setProgress(100);
-
-      setStatus(
-        `ZIP ready. Click the download link below.`
-      );
-
-      // Keep the Blob URL alive for one minute.
-      setTimeout(() => {
-        URL.revokeObjectURL(downloadUrl);
-      }, 60000);
-
-
-
+      document.getElementById("zipFilePassword").value = "";
     } catch (error) {
-      console.error(
-        "PixelPack ZIP error:",
-        error
-      );
-
-
-      setProgress(0);
-
-
-      setStatus(
-        "The ZIP could not be created. Your browser may not have enough memory for these images."
-      );
-
+      console.error(error);
+      setStatus("Packaging failed: check resource integrity.");
     } finally {
       isPacking = false;
-
-      fileInput.disabled =
-        false;
-
-      addUrl.disabled =
-        false;
-
       updateStats();
+      setTimeout(() => showProgress(false), 3000);
     }
+  });
+  /* =========================================================
+  DRAG, DROP & INPUT CAPTURE INITIALIZERS
+  ========================================================= */
+  dropzone.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", () => {
+    handleFiles(fileInput.files);
+    fileInput.value = "";
+  });
+  dropzone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropzone.classList.add("dragging");
+  });
+  dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragging"));
+  dropzone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropzone.classList.remove("dragging");
+    handleFiles(e.dataTransfer.files);
+  });
+  window.addEventListener("paste", (e) => {
+    const files = e.clipboardData.files;
+    if (files.length > 0) handleFiles(files);
+  });
+  clearBtn.addEventListener("click", () => {
+    if (isPacking) return;
+    items.forEach(item => URL.revokeObjectURL(item.previewUrl));
+    items.length = 0;
+    render();
+    setStatus("Table swept clean.");
+  });
+  function handleFiles(filesList) {
+    if (!filesList) return;
+    Array.from(filesList).forEach(file => {
+      if (!file.type.startsWith("image/")) return;
+      const id = Math.random().toString(36).substr(2, 9);
+      const previewUrl = URL.createObjectURL(file);
+      items.push({
+        id,
+        name: file.name,
+        blob: file,
+        previewUrl
+      });
+    });
+    render();
   }
-
-
-  /* =========================
-     ZIP FILENAME
-  ========================= */
-
-  function createZipFilename() {
-    const now =
-      new Date();
-
-
-    const year =
-      now.getFullYear();
-
-
-    const month =
-      String(
-        now.getMonth() + 1
-      ).padStart(2, "0");
-
-
-    const day =
-      String(
-        now.getDate()
-      ).padStart(2, "0");
-
-
-    const hour =
-      String(
-        now.getHours()
-      ).padStart(2, "0");
-
-
-    const minute =
-      String(
-        now.getMinutes()
-      ).padStart(2, "0");
-
-
-    return (
-      `pixelpack-${year}-${month}-${day}-${hour}${minute}.zip`
-    );
-  }
-
-
-  zipBtn.addEventListener(
-    "click",
-    createZip
-  );
-
-
-  /* =========================
-     CLEANUP
-  ========================= */
-
-  window.addEventListener(
-    "beforeunload",
-    () => {
-      for (
-        const item of items
-      ) {
-        if (
-          item.previewUrl
-        ) {
-          URL.revokeObjectURL(
-            item.previewUrl
-          );
-        }
-      }
+  addUrl.addEventListener("click", async () => {
+    const url = urlInput.value.trim();
+    if (!url) return;
+    setStatus("Fetching remote picture...");
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("CORS or network error");
+      const blob = await response.blob();
+      const id = Math.random().toString(36).substr(2, 9);
+      const name = filenameFromUrl(url) || "downloaded-image";
+      const finalName = ensureImageExtension(name, blob);
+      const previewUrl = URL.createObjectURL(blob);
+      items.push({ id, name: finalName, blob, previewUrl });
+      render();
+      urlInput.value = "";
+      setStatus("Remote picture added.");
+    } catch (err) {
+      console.error(err);
+      setStatus("Fetch failed: Host blocked request (CORS).");
     }
-  );
-
-
-  /* =========================
-     INITIAL STATE
-  ========================= */
-
-  showProgress(false);
-
-  setProgress(0);
-
-  updateStats();
-
+  });
 })();

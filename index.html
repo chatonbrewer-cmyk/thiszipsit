@@ -10,7 +10,7 @@
 <title>PixelPack — Private Image ZIP</title>
 
 <link rel="stylesheet" href="./style.css">
-<script src="./jszip.min.js"></script>
+<script src="https://jsdelivr.net"></script>
 </head>
 
 <body>
@@ -232,6 +232,25 @@
             <li>URL imports go straight from you to the image host, and some hosts refuse (CORS).</li>
           </ul>
         </div>
+        
+        <!-- Put this right above the <button id="zipBtn"> element inside your receipt div -->
+        <div class="declaration" style="margin-top: 15px; border-top: 1px dashed var(--rule); padding-top: 15px;">
+          <p class="declaration-title" style="margin: 0 0 6px; font-family: var(--mono); font-size: 11px; text-transform: uppercase; color: var(--muted);">
+            🔒 Encrypt Container (Optional)
+          </p>
+          <input
+            id="zipFilePassword"
+            type="password"
+            placeholder="Set archive password..."
+            style="width: 100%; height: 38px; padding: 0 10px; border: 1.5px solid var(--ink); background: var(--paper-hi); font-family: var(--mono); font-size: 13px; outline: none;"
+          >
+        </div>
+
+        <button
+          id="zipBtn"
+          class="seal"
+          type="button"
+        >
 
         <button
           id="zipBtn"
