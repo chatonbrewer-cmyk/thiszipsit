@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#efe6d4">
+
+<title>PixelPack — Private Image ZIP</title>
+
+<link rel="stylesheet" href="./style.css">
+<script src="./jszip.min.js"></script>
+</head>
+
+<body>
+
+<div class="app">
+
+  <!-- ======================
+       MASTHEAD
+  ======================= -->
+
+  <header class="masthead">
+
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="30" height="30">
+          <path d="M4 10 16 4l12 6v12l-12 6-12-6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M4 10l12 6 12-6M16 16v12" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M10 7l12 6" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </span>
+      <span class="brand-name">PixelPack</span>
+    </div>
+
+    <dl class="ticket">
+      <div><dt>Form</dt><dd>PP-01</dd></div>
+      <div><dt>Courier</dt><dd>Your browser</dd></div>
+      <div><dt>Server</dt><dd class="strike">None</dd></div>
+    </dl>
+
+  </header>
+
+
+  <!-- ======================
+       HERO
+  ======================= -->
+
+  <section class="hero">
+
+    <div class="hero-text">
+
+      <p class="kicker">
+        <span class="kicker-rule"></span>
+        A small parcel service for pictures
+      </p>
+
+      <h1>
+        Pack your pictures.
+        <em>Keep&nbsp;them&nbsp;yours.</em>
+      </h1>
+
+      <p class="hero-copy">
+        Drop images on the table, line them up, and seal them into
+        a single ZIP. Everything is boxed right here in your browser —
+        nothing gets shipped to a server along the way.
+      </p>
+
+    </div>
+
+    <div class="stamp" aria-hidden="true">
+      <svg viewBox="0 0 200 200">
+        <defs>
+          <path id="ring" d="M100,100 m-72,0 a72,72 0 1,1 144,0 a72,72 0 1,1 -144,0"/>
+        </defs>
+        <circle cx="100" cy="100" r="92" fill="none" stroke="currentColor" stroke-width="3"/>
+        <circle cx="100" cy="100" r="54" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <text font-size="15.5" letter-spacing="3.4" fill="currentColor">
+          <textPath href="#ring">PROCESSED LOCALLY ✶ NO UPLOADS ✶ NO TRACKING ✶</textPath>
+        </text>
+        <text x="100" y="96" text-anchor="middle" font-size="24" font-weight="700" fill="currentColor">100%</text>
+        <text x="100" y="118" text-anchor="middle" font-size="12" letter-spacing="2" fill="currentColor">IN-BROWSER</text>
+      </svg>
+    </div>
+
+  </section>
+
+
+  <!-- ======================
+       WORKSPACE
+  ======================= -->
+
+  <main class="workspace">
+
+    <section class="table">
+
+      <div
+        id="dropzone"
+        class="dropzone"
+        tabindex="0"
+        role="button"
+        aria-label="Add images"
+      >
+
+        <span class="scissors" aria-hidden="true">✂</span>
+
+        <div class="drop-inner">
+
+          <span class="drop-step">Step 1</span>
+
+          <h2>
+            Drop images in the box
+          </h2>
+
+          <p>
+            or <u>browse your device</u>, or just press
+            <kbd>Ctrl</kbd> <kbd>V</kbd> to paste from the clipboard
+          </p>
+
+        </div>
+
+        <input
+          id="fileInput"
+          type="file"
+          accept="image/*"
+          multiple
+        >
+
+      </div>
+
+
+      <div class="url-row">
+
+        <label class="url-label" for="urlInput">
+          Or by address
+        </label>
+
+        <input
+          id="urlInput"
+          class="url-input"
+          type="url"
+          inputmode="url"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="https://example.com/photo.jpg"
+        >
+
+        <button
+          id="addUrl"
+          class="btn"
+          type="button"
+        >
+          Fetch it →
+        </button>
+
+      </div>
+
+
+      <div class="gallery-head">
+
+        <h3 class="gallery-title">
+          On the table
+          <small id="count">0</small>
+        </h3>
+
+        <button
+          id="clearBtn"
+          class="link-btn"
+          type="button"
+        >
+          Sweep clear
+        </button>
+
+      </div>
+
+
+      <section
+        id="images"
+        class="images"
+        aria-live="polite"
+      >
+
+        <div
+          id="empty"
+          class="empty"
+        >
+          <strong>The table is empty.</strong>
+          <span>Pictures you add will be laid out here like prints, ready to pack.</span>
+        </div>
+
+      </section>
+
+    </section>
+
+
+    <!-- MANIFEST -->
+
+    <aside class="manifest">
+
+      <div class="receipt">
+
+        <div class="receipt-head">
+          <span>Packing manifest</span>
+          <span class="live">● live</span>
+        </div>
+
+        <dl class="lines">
+          <div>
+            <dt>Items</dt>
+            <dd id="statImages">0</dd>
+          </div>
+          <div>
+            <dt>Gross weight</dt>
+            <dd id="statSize">0 B</dd>
+          </div>
+          <div>
+            <dt>Container</dt>
+            <dd>.zip</dd>
+          </div>
+          <div>
+            <dt>Method</dt>
+            <dd>Deflate</dd>
+          </div>
+        </dl>
+
+        <div class="declaration">
+          <p class="declaration-title">Declaration</p>
+          <ul>
+            <li>Files &amp; clipboard images are handled only in this browser.</li>
+            <li>This site has no upload endpoint and no database.</li>
+            <li>URL imports go straight from you to the image host, and some hosts refuse (CORS).</li>
+          </ul>
+        </div>
+
+        <button
+          id="zipBtn"
+          class="seal"
+          type="button"
+        >
+          <span class="seal-label">Seal &amp; download</span>
+          <span class="seal-sub">Step 2 · one ZIP file</span>
+        </button>
+
+        <div
+          id="progress"
+          class="progress"
+        >
+          <div
+            id="progressBar"
+            class="progress-bar"
+          ></div>
+        </div>
+
+        <div
+          id="status"
+          class="status"
+          role="status"
+          aria-live="polite"
+        ></div>
+
+      </div>
+
+    </aside>
+
+  </main>
+
+
+  <footer class="footer">
+    <span>PixelPack — hand-packed in your browser</span>
+    <span>No accounts · No uploads · No tracking</span>
+  </footer>
+
+</div>
+
+<script src="./app.js"></script>
+
+</body>
+</html>
